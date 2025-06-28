@@ -59,10 +59,17 @@ def add_lora_to_model(model, rank=32, inference=False):
         r=rank,
         lora_alpha=rank,
         target_modules=[
-            # Decoder cross attention
+            # --- NEW: Core Fusion Layers (Most Important) ---
+            # "v_proj",
+            # "l_proj",
+            # "values_v_proj",
+            # "values_l_proj",
+            # "out_v_proj",
+            # "out_l_proj",
+            # --- From your old list: Decoder Cross Attention (Still Very Important) ---
             "cross_attn.sampling_offsets",
             "cross_attn.attention_weights", 
-            "cross_attn.value_proj",
+            "cross_attn.value_proj",      # Note: This might be redundant if the above covers it, but it's safe to include
             "cross_attn.output_proj",
             # Text cross attention
             "ca_text.out_proj",
@@ -70,13 +77,34 @@ def add_lora_to_model(model, rank=32, inference=False):
             "self_attn.out_proj",
             # FFN
             "linear1",
-            "linear2",
-            # Bbox prediction layers
+            "linear2",            
+            # --- From your old list: Bbox Head ---
             "bbox_embed.0.layers.0",
             "bbox_embed.0.layers.1",
-            # fearue map
+            #"bbox_embed.0.layers.2",
+             # fearue map
             "feat_map"
-        ],
+        ],   
+        # target_modules=[
+        #     # Decoder cross attention
+        #     "cross_attn.sampling_offsets",
+        #     "cross_attn.attention_weights", 
+        #     "cross_attn.value_proj",
+        #     "cross_attn.output_proj",
+        #     # Text cross attention
+        #     "ca_text.out_proj",
+        #     # Self attention 
+        #     "self_attn.out_proj",
+        #     # FFN
+        #     "linear1",
+        #     "linear2",
+        #     # Bbox prediction layers
+        #     "bbox_embed.0.layers.0",
+        #     "bbox_embed.0.layers.1",
+        #     # fearue map
+        #     "feat_map"
+        # ],
+        #modules_to_save=["bbox_embed.0.layers.0,bbox_embed.0.layers.1,bbox_embed.0.layers.2"],
         modules_to_save=["bbox_embed.0.layers.2"],
         bias="none",
         inference_mode=inference,

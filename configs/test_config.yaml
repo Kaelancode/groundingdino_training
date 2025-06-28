@@ -1,19 +1,26 @@
 data:
   batch_size: 4
   num_workers: 8
-  train_ann: multimodal-data/fashion_dataset_subset/train_annotations.csv
-  train_dir: multimodal-data/fashion_dataset_subset/images/train
-  val_ann: multimodal-data/fashion_dataset_subset/val_annotations.csv
-  val_dir: multimodal-data/fashion_dataset_subset/images/val
+  # train_ann: multimodal-data/fashion_dataset_subset/train_annotations.csv
+  # train_dir: multimodal-data/fashion_dataset_subset/images/train
+  # val_ann: multimodal-data/fashion_dataset_subset/val_annotations.csv
+  # val_dir: multimodal-data/fashion_dataset_subset/images/val
+  train_dir: "/home/kaelan/Projects/Github/Grounding-Dino-FineTuning/water/trial_train"
+  train_ann: "/home/kaelan/Projects/Github/Grounding-Dino-FineTuning/water/trial_train_annotations.csv"
+  val_dir: "/home/kaelan/Projects/Github/Grounding-Dino-FineTuning/water/trial_val"
+  val_ann: "/home/kaelan/Projects/Github/Grounding-Dino-FineTuning/water/trial_val_annotations.csv"  
 model:
   config_path: groundingdino/config/GroundingDINO_SwinT_OGC.py
-  lora_weights: weights/20241221_1512/checkpoint_epoch_10.pth
-  weights_path: weights/groundingdino_swint_ogc.pth
+  #lora_weights: weights/20250624_2206/checkpoint_epoch_3.pth
+  #lora_weights: weights/20250621_1740/checkpoint_epoch_20.pth
+  #lora_weights: weights/20250622_0151/checkpoint_epoch_3.pth
+  lora_weigths: /home/kaelan/Projects/Github/Grounding-Dino-FineTuning/weights/20250628_1318-restore/checkpoint_epoch_10.pth
+  weights_path: weights/original/groundingdino_swint_ogc.pth  
 training:
   learning_rate: 0.0001
   num_epochs: 200
   save_dir: weights
   save_frequency: 5
-  use_lora: true
+  use_lora: True
   visualization_frequency: 5
   warmup_epochs: 5

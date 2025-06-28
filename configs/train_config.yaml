@@ -1,20 +1,21 @@
 data:
-  train_dir: "multimodal-data/fashion_dataset_subset/images/train"
-  train_ann: "multimodal-data/fashion_dataset_subset/train_annotations.csv"
-  val_dir: "multimodal-data/fashion_dataset_subset/images/val"
-  val_ann: "multimodal-data/fashion_dataset_subset/val_annotations.csv"
-  batch_size: 4
+  train_dir: "//home/kaelan/Projects/Github/Grounding-Dino-FineTuning/water/ProcessedDataSet/train_single_1000_images"
+  train_ann: "/home/kaelan/Projects/Github/Grounding-Dino-FineTuning/water/ProcessedDataSet/train_single_1000_annotations.csv"
+  val_dir: "/home/kaelan/Projects/Github/Grounding-Dino-FineTuning/water/ProcessedDataSet/val_single_100_images"
+  val_ann: "/home/kaelan/Projects/Github/Grounding-Dino-FineTuning/water/ProcessedDataSet/val_single_100_annotations.csv"
+  batch_size: 8
   num_workers: 8
 
 model:
   config_path: "groundingdino/config/GroundingDINO_SwinT_OGC.py"
+  #lora_weigths: "/home/kaelan/Projects/Github/Grounding-Dino-FineTuning/weights/20250628_0913/checkpoint_epoch_5.pth"
   weights_path: "weights/groundingdino_swint_ogc.pth"
 
 training:
-  num_epochs: 200
-  learning_rate: 1e-3
+  num_epochs: 31
+  learning_rate: 2e-4
   save_dir: "weights"
   save_frequency: 5
-  warmup_epochs: 5
-  use_lora: true
+  warmup_epochs: 2
+  use_lora: True
   visualization_frequency: 5

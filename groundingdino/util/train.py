@@ -35,17 +35,74 @@ def preprocess_caption(caption: str) -> str:
     
 
 
-def load_model(model_config_path: str, model_checkpoint_path: str, device: str = "cuda", use_lora: bool =False):
+# def load_model(model_config_path: str, model_checkpoint_path: str, model_lora_path: str, device: str = "cuda", use_lora: bool =False):
+#     args = SLConfig.fromfile(model_config_path)
+#     args.device = device
+#     model = build_model(args)
+#     checkpoint = torch.load(model_checkpoint_path, map_location="cpu")
+#     model.load_state_dict(clean_state_dict(checkpoint["model"]), strict=False)
+#     if use_lora:
+#         print(f"Adding Lora to model!")
+#         model=add_lora_to_model(model)
+#         print(f"Lora model is {model}")
+#         # if "lora" in model_checkpoint_path:
+#         #     lora_ckpt = torch.load(model_lora_path, map_location="cpu")
+#         #     lora_ckpt_state_dict = clean_state_dict(lora_ckpt["model"]) if "model" in lora_ckpt else clean_state_dict(lora_ckpt)
+#         #     new_lora_ckpt_state_dict = {}
+#         #     for key, value in lora_ckpt_state_dict.items():
+#         #         new_key = key.replace(".lora_A.weight", ".lora_A.default.weight").replace(".lora_B.weight", ".lora_B.default.weight")
+#         #         new_lora_ckpt_state_dict[new_key] = value
+#         #     model.load_state_dict(new_lora_ckpt_state_dict, strict=False)
+#         #     print("Lora weights loaded")
+#     return model
+
+def load_model(model_config_path: str, model_checkpoint_path: str, model_lora_path: str = None, device: str = "cuda", use_lora: bool = False):
     args = SLConfig.fromfile(model_config_path)
     args.device = device
     model = build_model(args)
+
+    # Load base model weights
     checkpoint = torch.load(model_checkpoint_path, map_location="cpu")
-    model.load_state_dict(clean_state_dict(checkpoint["model"]), strict=False)
+    model.load_state_dict(clean_state_dict(checkpoint.get("model", checkpoint)), strict=False)
+
     if use_lora:
-        print(f"Adding Lora to model!")
-        model=add_lora_to_model(model)
-        print(f"Lora model is {model}")
+        print("Adding LoRA to model")
+        model = add_lora_to_model(model)
+        print("Lora Checkpoint path", model_lora_path)
+
+        if model_lora_path and model_lora_path != "None":
+            print("Loading LoRA adapter weights")
+            lora_ckpt = torch.load(model_lora_path, map_location="cpu")
+            lora_state_dict = clean_state_dict(lora_ckpt.get("model", lora_ckpt))
+
+            # Handle key renaming for LoRA and modules_to_save
+            new_lora_ckpt_state_dict = {}
+            modules_to_save = []
+            if hasattr(model, "peft_config") and "default" in model.peft_config:
+                modules_to_save = model.peft_config["default"].modules_to_save
+
+            for key, value in lora_state_dict.items():
+                new_key = key.replace(".lora_A.weight", ".lora_A.default.weight").replace(".lora_B.weight", ".lora_B.default.weight")
+                for module_name in modules_to_save:
+                    if module_name in key:
+                        new_key = new_key.replace(".weight", ".original_module.weight").replace(".bias", ".original_module.bias")
+                new_lora_ckpt_state_dict[new_key] = value
+
+            # Verify keys
+            missing_keys = [k for k in new_lora_ckpt_state_dict if k not in model.state_dict()]
+            if missing_keys:
+                print("Missing LoRA keys:")
+                for k in missing_keys:
+                    print(f" - {k}")
+                raise RuntimeError("LoRA checkpoint has keys not found in model.")
+
+            model.load_state_dict(new_lora_ckpt_state_dict, strict=False)
+            print("LoRA weights loaded successfully.")
+        else:
+            print("WARNING: LoRA path not provided. LoRA layers will be randomly initialized.")
+    
     return model
+
 
 
 def load_image(image_path: str) -> Tuple[np.array, torch.Tensor]:
@@ -157,11 +214,13 @@ class Model:
         self,
         model_config_path: str,
         model_checkpoint_path: str,
+        model_lora_path: str = None,
         device: str = "cuda"
     ):
         self.model = load_model(
             model_config_path=model_config_path,
             model_checkpoint_path=model_checkpoint_path,
+            model_lora_path = model_lora_path,
             device=device
         ).to(device)
         self.device = device

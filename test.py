@@ -32,8 +32,8 @@ def process_images(
         model,
         text_prompt,
         data_config,
-        box_threshold=0.30,
-        text_threshold=0.20
+        box_threshold=0.20,
+        text_threshold=0.10
 ):
     visualizer = GroundingDINOVisualizer(save_dir="visualizations")
 
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     # Config file of the prediction, the model weights can be complete model weights but if use_lora is true then lora_wights should also be present see example
     ## config file
     config_path="configs/test_config.yaml"
-    text_prompt="shirt .bag .pants"
+    text_prompt="watermarks."
     data_config, model_config, training_config = ConfigurationManager.load_config(config_path)
     model = load_model(model_config,training_config.use_lora)
     process_images(model,text_prompt,data_config)

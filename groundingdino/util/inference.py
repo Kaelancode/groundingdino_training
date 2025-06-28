@@ -64,9 +64,10 @@ def load_model(model_config, use_lora: bool = False, device: str = "cuda", stric
         for key, value in lora_ckpt_state_dict.items():
             new_key = key.replace(".lora_A.weight", ".lora_A.default.weight").replace(".lora_B.weight", ".lora_B.default.weight")
             # Handle modules_to_save
-            for module_name in modules_to_save:
-                if module_name in key:
-                    new_key = new_key.replace(".weight", ".original_module.weight").replace(".bias", ".original_module.bias")
+            if modules_to_save:
+                for module_name in modules_to_save:
+                    if module_name in key:
+                        new_key = new_key.replace(".weight", ".original_module.weight").replace(".bias", ".original_module.bias")
             new_lora_ckpt_state_dict[new_key] = value
         
         print("Checking if all lora checkpoint keys exist in the model.")

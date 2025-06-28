@@ -19,15 +19,18 @@ from groundingdino.datasets.dataset import GroundingDINODataset
 from groundingdino.util.losses import SetCriterion
 from config import ConfigurationManager, DataConfig, ModelConfig
 from peft import get_peft_model_state_dict
-
+import math
+from torchvision.utils import save_image
 # Ignore tokenizer warning
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
     
 
 def setup_model(model_config: ModelConfig, use_lora: bool=False) -> torch.nn.Module:
+    print("INside setup model show LORA", model_config.lora_weigths) 
     return load_model(
         model_config.config_path,
         model_config.weights_path,
+        model_config.lora_weigths,
         use_lora=use_lora,
     )
 
@@ -230,7 +233,7 @@ class GroundingDINOTrainer:
         """Save checkpoint with EMA and scheduler state""" 
         if use_lora:
             lora_state_dict = get_peft_model_state_dict(self.model)
-            print(lora_state_dict)
+            #print(lora_state_dict)
             checkpoint = {
             'epoch': epoch,
             'model': lora_state_dict,
@@ -258,6 +261,8 @@ def train(config_path: str, save_dir: Optional[str] = None) -> None:
     """
 
     data_config, model_config, training_config = ConfigurationManager.load_config(config_path)
+    print("MODEL CONFIG", model_config)
+
 
     model = setup_model(model_config, training_config.use_lora)
     
@@ -281,7 +286,8 @@ def train(config_path: str, save_dir: Optional[str] = None) -> None:
     
     train_loader, val_loader = setup_data_loaders(data_config)
 
-    steps_per_epoch = len(train_loader.dataset) // data_config.batch_size
+    #steps_per_epoch = len(train_loader.dataset) // data_config.batch_size
+    steps_per_epoch = math.ceil(len(train_loader.dataset) / data_config.batch_size)
     
     visualizer = GroundingDINOVisualizer(save_dir=save_dir)
     
@@ -292,7 +298,7 @@ def train(config_path: str, save_dir: Optional[str] = None) -> None:
     else:
          print( f"Is only Lora trainable?  {verify_only_lora_trainable(model)} ")
 
-    print_frozen_status(model)
+    #print_frozen_status(model)
 
     trainer = GroundingDINOTrainer(
         model,
@@ -310,6 +316,17 @@ def train(config_path: str, save_dir: Optional[str] = None) -> None:
         epoch_losses = defaultdict(list)
         for batch_idx, batch in enumerate(train_loader):
             losses = trainer.train_step(batch)
+            
+            # Save high-loss batch images
+            if losses.get("total_loss", 0) > 2.5:
+                loss_folder = os.path.join(save_dir, f"highloss_epoch{epoch+1}")
+                os.makedirs(loss_folder, exist_ok=True)
+                #images = batch.get("image", None)  # tensor: [B, C, H, W]
+                images = batch[0][0]  
+                if images is not None:
+                    for i, img_tensor in enumerate(images):
+                        img_save_path = os.path.join(loss_folder, f"epoch{epoch+1}_batch{batch_idx}_img{i}_{losses.get('total_loss', 0)}.png")
+                        save_image(img_tensor, img_save_path)
             
             # Record losses
             for k, v in losses.items():

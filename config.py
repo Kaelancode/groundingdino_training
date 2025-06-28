@@ -34,7 +34,7 @@ class ModelConfig:
         return cls(
             config_path=str(data['config_path']),
             weights_path=str(data['weights_path']),
-            lora_weigths=str(data.get('lora_weights', None)),
+            lora_weigths=str(data.get('lora_weigths', None)),
         )
 
 @dataclass
